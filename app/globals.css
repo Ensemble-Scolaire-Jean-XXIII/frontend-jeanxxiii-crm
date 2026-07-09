@@ -1,8 +1,9 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 
 :root {
-  --background: #eceff1;
-  --foreground: #303942;
+  --background: #f4f6f8;
+  --foreground: #1e293b;
 
   --j23-gb1: #425a72;
   --j23-gb1-hover: #3b5065;
@@ -13,14 +14,13 @@
   --j23-orange: #e84e1b;
   --j23-blanc: #ffffff;
   --j23-overlay: #425a7266;
-  --j23-gb-trans: #425a7269;
-  --j23-blanc-trans: #ffffff6b;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #22292f;
-    --foreground: #ffffff;
+    --background: #0f172a;
+    --foreground: #f8fafc;
+    --j23-gb2: #1e293b;
   }
 }
 
@@ -37,13 +37,106 @@
   --color-accent: var(--j23-orange);
   --color-overlay: var(--j23-overlay);
 
-  --font-sans:
-    system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial,
-    sans-serif;
+  --font-sans: "Inter", system-ui, sans-serif;
 }
 
 body {
-  background-color: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  background-color: transparent;
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-md font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-white hover:bg-primary-hover focus:ring-primary dark:focus:ring-offset-slate-900;
+  }
+
+  .btn-accent {
+    @apply bg-accent text-white hover:bg-[#d44115] focus:ring-accent dark:focus:ring-offset-slate-900;
+  }
+
+  .btn-danger {
+    @apply bg-danger text-white hover:bg-danger-hover focus:ring-danger dark:focus:ring-offset-slate-900;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent text-primary hover:bg-slate-100 dark:hover:bg-slate-800 dark:text-slate-300;
+  }
+
+  .input-field {
+    @apply w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder-slate-500;
+  }
+
+  .label-text {
+    @apply block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1;
+  }
+}
+
+.slideshow-container {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  background-color: var(--j23-gb2);
+}
+
+@media (prefers-color-scheme: dark) {
+  .slideshow-container {
+    background-color: var(--background);
+  }
+}
+
+.slide {
+  position: absolute;
+  inset: 0;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0;
+  animation: diapo-anim 30s infinite ease-in-out;
+}
+
+.bg-1 {
+  background-image: url("/diapo-bg/bg1.webp");
+  animation-delay: 0s;
+}
+.bg-2 {
+  background-image: url("/diapo-bg/bg2.webp");
+  animation-delay: 6s;
+}
+.bg-3 {
+  background-image: url("/diapo-bg/bg3.webp");
+  animation-delay: 12s;
+}
+.bg-4 {
+  background-image: url("/diapo-bg/bg4.webp");
+  animation-delay: 18s;
+}
+.bg-5 {
+  background-image: url("/diapo-bg/bg5.webp");
+  animation-delay: 24s;
+}
+
+@keyframes diapo-anim {
+  0% {
+    opacity: 0;
+    background-size: 100%;
+  }
+  5% {
+    opacity: 1;
+  }
+  20% {
+    opacity: 1;
+  }
+  25% {
+    opacity: 0;
+    background-size: 110%;
+  }
+  100% {
+    opacity: 0;
+    background-size: 100%;
+  }
 }

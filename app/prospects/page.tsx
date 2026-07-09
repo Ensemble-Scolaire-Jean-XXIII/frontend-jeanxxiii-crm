@@ -4,15 +4,22 @@ import { useEffect, useState, useCallback } from "react";
 import { prospectService } from "../services/prospectService";
 import { statusService } from "../services/statusService";
 import { countryService } from "../services/countryService";
-import { Prospect } from "../types";
+import { ProspectExtended, Status, Country } from "../types";
+
+const formInputs = [
+  { name: "first_name", type: "text", placeholder: "Prénom", required: true },
+  { name: "last_name", type: "text", placeholder: "Nom", required: true },
+  { name: "email", type: "email", placeholder: "Email", required: true },
+  { name: "phone", type: "tel", placeholder: "Téléphone", required: false },
+];
 
 export default function ProspectsPage() {
-  const [prospects, setProspects] = useState<any[]>([]);
-  const [statuses, setStatuses] = useState<any[]>([]);
-  const [countries, setCountries] = useState<any[]>([]);
+  const [prospects, setProspects] = useState<ProspectExtended[]>([]);
+  const [statuses, setStatuses] = useState<Status[]>([]);
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [sortOption, setSortOption] = useState("alpha_asc");
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<Partial<Prospect>>({});
-
+  const [editForm, setEditForm] = useState<Partial<ProspectExtended>>({});
   const [createForm, setCreateForm] = useState({
     first_name: "",
     last_name: "",
@@ -38,9 +45,29 @@ export default function ProspectsPage() {
     loadData();
   }, [loadData]);
 
+  const handleCreateChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
+    const { name, value } = e.target;
+    setCreateForm((prev) => ({
+      ...prev,
+      [name]: name.endsWith("_id") ? Number(value) : value,
+    }));
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    await prospectService.create(createForm);
+    const { country_id, ...rest } = createForm;
+    await prospectService.create({ ...rest, country: String(country_id) });
+    setCreateForm({
+      first_name: "",
+      last_name: "",
+      email: "",
+      phone: "",
+      gender: "Masculin",
+      country_id: 1,
+      status_id: 1,
+    });
     loadData();
   };
 
@@ -49,149 +76,180 @@ export default function ProspectsPage() {
     loadData();
   };
 
-  const startEdit = (p: Prospect) => {
+  const handleUpdate = async (
+    id: string,
+    field: string,
+    value: string | number,
+  ) => {
+    await prospectService.update(id, { [field]: value });
+    loadData();
+  };
+
+  const startEdit = (p: ProspectExtended) => {
     setEditingId(p.id);
     setEditForm(p);
   };
 
   const saveEdit = async (id: string) => {
-    const payload = { ...editForm };
-    delete (payload as Record<string, unknown>).created_at;
-    delete (payload as Record<string, unknown>).last_action_date;
-    delete (payload as Record<string, unknown>).status_name;
-    delete (payload as Record<string, unknown>).country_name;
-    delete (payload as Record<string, unknown>).id;
-
-    await prospectService.update(id, payload);
+    await prospectService.update(id, {
+      first_name: editForm.first_name,
+      last_name: editForm.last_name,
+      email: editForm.email,
+      phone: editForm.phone,
+    });
     setEditingId(null);
     loadData();
   };
 
+  const sortedProspects = [...prospects].sort((a, b) => {
+    switch (sortOption) {
+      case "alpha_asc":
+        return a.last_name.localeCompare(b.last_name);
+      case "alpha_desc":
+        return b.last_name.localeCompare(a.last_name);
+      case "date_desc":
+        return (
+          new Date(b.last_action_date || 0).getTime() -
+          new Date(a.last_action_date || 0).getTime()
+        );
+      case "date_asc":
+        return (
+          new Date(a.last_action_date || 0).getTime() -
+          new Date(b.last_action_date || 0).getTime()
+        );
+      case "status":
+        return (a.status_name || "").localeCompare(b.status_name || "");
+      default:
+        return 0;
+    }
+  });
+
   return (
     <div className="space-y-8">
-      <h1 className="text-3xl font-bold text-primary">Prospects</h1>
+      <h1 className="text-3xl font-bold text-primary dark:text-white">
+        Prospects
+      </h1>
 
-      <div className="bg-white dark:bg-secondary p-6 rounded-xl border border-gray-200 shadow-sm">
-        <h2 className="font-bold mb-4 text-secondary">Ajouter un prospect</h2>
+      <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold text-primary dark:text-white">
+            Ajouter un prospect
+          </h2>
+          <span className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-3 py-1 rounded-full text-xs font-medium">
+            Nouveau
+          </span>
+        </div>
+
         <form
           onSubmit={handleCreate}
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
         >
-          <input
-            type="text"
-            placeholder="Prénom"
-            className="rounded-lg border p-2"
-            value={createForm.first_name}
-            onChange={(e) =>
-              setCreateForm({ ...createForm, first_name: e.target.value })
-            }
-            required
-          />
-          <input
-            type="text"
-            placeholder="Nom"
-            className="rounded-lg border p-2"
-            value={createForm.last_name}
-            onChange={(e) =>
-              setCreateForm({ ...createForm, last_name: e.target.value })
-            }
-            required
-          />
-          <input
-            type="email"
-            placeholder="Email"
-            className="rounded-lg border p-2"
-            value={createForm.email}
-            onChange={(e) =>
-              setCreateForm({ ...createForm, email: e.target.value })
-            }
-            required
-          />
-          <input
-            type="tel"
-            placeholder="Téléphone"
-            className="rounded-lg border p-2"
-            value={createForm.phone}
-            onChange={(e) =>
-              setCreateForm({ ...createForm, phone: e.target.value })
-            }
-          />
+          {formInputs.map((input) => (
+            <div key={input.name}>
+              <label className="label-text">{input.placeholder}</label>
+              <input
+                name={input.name}
+                type={input.type}
+                className="input-field"
+                value={createForm[input.name as keyof typeof createForm]}
+                onChange={handleCreateChange}
+                required={input.required}
+              />
+            </div>
+          ))}
 
-          <select
-            className="rounded-lg border p-2"
-            value={createForm.country_id}
-            onChange={(e) =>
-              setCreateForm({
-                ...createForm,
-                country_id: Number(e.target.value),
-              })
-            }
-          >
-            {countries.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+          <div>
+            <label className="label-text">Pays</label>
+            <select
+              name="country_id"
+              className="input-field"
+              value={createForm.country_id}
+              onChange={handleCreateChange}
+            >
+              {countries.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
-          <select
-            className="rounded-lg border p-2"
-            value={createForm.gender}
-            onChange={(e) =>
-              setCreateForm({ ...createForm, gender: e.target.value })
-            }
-          >
-            <option value="Masculin">Homme</option>
-            <option value="Féminin">Femme</option>
-          </select>
+          <div>
+            <label className="label-text">Sexe</label>
+            <select
+              name="gender"
+              className="input-field"
+              value={createForm.gender}
+              onChange={handleCreateChange}
+            >
+              <option value="Masculin">Homme</option>
+              <option value="Féminin">Femme</option>
+            </select>
+          </div>
 
-          <select
-            className="rounded-lg border p-2"
-            value={createForm.status_id}
-            onChange={(e) =>
-              setCreateForm({
-                ...createForm,
-                status_id: Number(e.target.value),
-              })
-            }
-          >
-            {statuses.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
+          <div>
+            <label className="label-text">Statut</label>
+            <select
+              name="status_id"
+              className="input-field"
+              value={createForm.status_id}
+              onChange={handleCreateChange}
+            >
+              {statuses.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
-          <button
-            type="submit"
-            className="bg-accent text-white px-4 py-2 rounded-lg font-bold hover:opacity-90"
-          >
-            Créer
-          </button>
+          <div className="lg:col-span-4 flex justify-end mt-2">
+            <button type="submit" className="btn btn-primary">
+              Créer
+            </button>
+          </div>
         </form>
       </div>
 
-      {/* Tableau */}
-      <div className="bg-white dark:bg-secondary p-6 rounded-xl border border-gray-200 shadow-sm overflow-x-auto">
+      <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-6 overflow-x-auto">
         <table className="w-full text-left">
           <thead>
-            <tr className="border-b-2 border-primary text-secondary">
-              <th className="p-3">Nom</th>
-              <th className="p-3">Contact</th>
-              <th className="p-3">Pays</th>
-              <th className="p-3">Statut</th>
-              <th className="p-3">Dernière action</th>
-              <th className="p-3 text-right">Actions</th>
+            <tr className="border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">
+              <th className="p-3 font-semibold">Nom</th>
+              <th className="p-3 font-semibold">Contact</th>
+              <th className="p-3 font-semibold">Pays</th>
+              <th className="p-3 font-semibold">Statut</th>
+              <th className="p-3 font-semibold">Dernière action</th>
+              <th className="p-3 font-semibold text-right">
+                <select
+                  className="bg-transparent border border-transparent hover:border-slate-300 dark:hover:border-slate-600 focus:border-primary rounded px-2 py-1 text-sm font-normal cursor-pointer outline-none transition-colors"
+                  value={sortOption}
+                  onChange={(e) => setSortOption(e.target.value)}
+                >
+                  <option value="alpha_asc">
+                    Trier par: Alphabétique (A-Z)
+                  </option>
+                  <option value="alpha_desc">
+                    Trier par: Alphabétique (Z-A)
+                  </option>
+                  <option value="date_desc">Trier par: Action récente</option>
+                  <option value="date_asc">Trier par: Action ancienne</option>
+                  <option value="status">Trier par: Statut</option>
+                </select>
+              </th>
             </tr>
           </thead>
           <tbody>
-            {prospects.map((p) => (
-              <tr key={p.id} className="border-b">
-                {editingId === p.id ? (
-                  <>
-                    <td className="p-3 flex gap-2">
+            {sortedProspects.map((p) => (
+              <tr
+                key={p.id}
+                className="group border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors"
+              >
+                <td className="p-3">
+                  {editingId === p.id ? (
+                    <div className="flex gap-2">
                       <input
-                        className="border p-1 w-20"
+                        className="input-field py-1 px-2 w-24"
                         value={editForm.first_name || ""}
                         onChange={(e) =>
                           setEditForm({
@@ -201,7 +259,7 @@ export default function ProspectsPage() {
                         }
                       />
                       <input
-                        className="border p-1 w-20"
+                        className="input-field py-1 px-2 w-24"
                         value={editForm.last_name || ""}
                         onChange={(e) =>
                           setEditForm({
@@ -210,105 +268,107 @@ export default function ProspectsPage() {
                           })
                         }
                       />
-                    </td>
-                    <td className="p-3">
+                    </div>
+                  ) : (
+                    <>
+                      {p.first_name} {p.last_name}
+                    </>
+                  )}
+                </td>
+                <td className="p-3">
+                  {editingId === p.id ? (
+                    <div className="flex flex-col gap-1">
                       <input
-                        className="border p-1 w-full"
+                        className="input-field py-1 px-2"
                         value={editForm.email || ""}
                         onChange={(e) =>
                           setEditForm({ ...editForm, email: e.target.value })
                         }
                       />
-                    </td>
-                    <td className="p-3">
-                      <select
-                        className="border p-1"
-                        value={editForm.country_id}
+                      <input
+                        className="input-field py-1 px-2"
+                        value={editForm.phone || ""}
                         onChange={(e) =>
-                          setEditForm({
-                            ...editForm,
-                            country_id: Number(e.target.value),
-                          })
+                          setEditForm({ ...editForm, phone: e.target.value })
                         }
-                      >
-                        {countries.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.name}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="p-3">
-                      <select
-                        className="border p-1"
-                        value={editForm.status_id}
-                        onChange={(e) =>
-                          setEditForm({
-                            ...editForm,
-                            status_id: Number(e.target.value),
-                          })
-                        }
-                      >
-                        {statuses.map((s) => (
-                          <option key={s.id} value={s.id}>
-                            {s.name}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="p-3 text-sm text-gray-500">Auto</td>
-                    <td className="p-3 text-right">
+                      />
+                    </div>
+                  ) : (
+                    <>
+                      {p.email}
+                      <br />
+                      <span className="text-xs text-slate-500">{p.phone}</span>
+                    </>
+                  )}
+                </td>
+                <td className="p-3">
+                  <select
+                    className="bg-transparent border border-transparent hover:border-slate-300 dark:hover:border-slate-600 focus:border-primary rounded px-2 py-1 text-sm cursor-pointer outline-none transition-colors"
+                    value={p.country_id ?? ""}
+                    onChange={(e) =>
+                      handleUpdate(p.id, "country_id", Number(e.target.value))
+                    }
+                  >
+                    {countries.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </td>
+                <td className="p-3">
+                  <select
+                    className="bg-transparent border border-transparent hover:border-slate-300 dark:hover:border-slate-600 focus:border-primary rounded px-2 py-1 text-sm cursor-pointer outline-none transition-colors"
+                    value={p.status_id ?? ""}
+                    onChange={(e) =>
+                      handleUpdate(p.id, "status_id", Number(e.target.value))
+                    }
+                  >
+                    {statuses.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </td>
+                <td className="p-3 text-sm">
+                  {p.last_action_date
+                    ? new Date(p.last_action_date).toLocaleDateString()
+                    : "Jamais"}
+                </td>
+                <td className="p-3 text-right">
+                  {editingId === p.id ? (
+                    <div className="flex justify-end gap-2">
                       <button
                         onClick={() => saveEdit(p.id)}
-                        className="text-green-600 font-bold mr-2"
+                        className="btn btn-ghost text-green-600 px-2 py-1 text-sm"
                       >
                         Valider
                       </button>
                       <button
                         onClick={() => setEditingId(null)}
-                        className="text-gray-500 font-bold"
+                        className="btn btn-ghost text-slate-500 px-2 py-1 text-sm"
                       >
                         Annuler
                       </button>
-                    </td>
-                  </>
-                ) : (
-                  <>
-                    <td className="p-3">
-                      {p.first_name} {p.last_name}
-                    </td>
-                    <td className="p-3">
-                      {p.email}
-                      <br />
-                      <span className="text-xs text-gray-500">{p.phone}</span>
-                    </td>
-                    <td className="p-3">{p.country_name || "N/A"}</td>
-                    <td className="p-3">
-                      <span className="bg-primary text-white text-xs px-2 py-1 rounded">
-                        {p.status_name}
-                      </span>
-                    </td>
-                    <td className="p-3 text-sm">
-                      {p.last_action_date
-                        ? new Date(p.last_action_date).toLocaleDateString()
-                        : "Jamais"}
-                    </td>
-                    <td className="p-3 text-right space-x-4">
+                    </div>
+                  ) : (
+                    <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                       <button
                         onClick={() => startEdit(p)}
-                        className="text-accent font-bold"
+                        className="btn btn-ghost text-accent px-2 py-1 text-sm"
                       >
-                        Modifier
+                        Corriger
                       </button>
                       <button
                         onClick={() => handleDelete(p.id)}
-                        className="text-danger font-bold"
+                        className="btn btn-ghost text-danger px-2 py-1 text-sm"
                       >
                         Supprimer
                       </button>
-                    </td>
-                  </>
-                )}
+                    </div>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>

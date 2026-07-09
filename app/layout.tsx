@@ -12,8 +12,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="fr" suppressHydrationWarning>
-      <body className="bg-background text-foreground">
-        <DashboardWrapper>{children}</DashboardWrapper>
+      <body className="bg-slideshow text-foreground font-sans antialiased">
+        <div className="content-overlay">
+          <DashboardWrapper>{children}</DashboardWrapper>
+        </div>
       </body>
     </html>
   );

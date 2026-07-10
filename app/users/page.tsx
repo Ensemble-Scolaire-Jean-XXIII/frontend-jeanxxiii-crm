@@ -1,128 +1,45 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
 import { userService } from "../services/userService";
 import { User } from "../types/index";
 import Toast from "../components/Toast";
+import { useCrud } from "../hooks/useCrud";
 
 export default function UsersPage() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<Partial<User>>({});
-  const [createForm, setCreateForm] = useState({
+  const {
+    data: users,
+    editingId,
+    setEditingId,
+    editForm,
+    setEditForm,
+    createForm,
+    setCreateForm,
+    error,
+    setError,
+    success,
+    setSuccess,
+    handleCreate,
+    handleDelete,
+    handleUpdateField,
+    startEdit,
+    saveEdit,
+  } = useCrud<User, any>(userService, {
     email: "",
     password_hash: "",
     first_name: "",
     last_name: "",
     role: "user",
   });
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
-  const loadData = useCallback(async () => {
-    try {
-      const data = await userService.getAll();
-      setUsers(data);
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Erreur lors du chargement des utilisateurs");
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      await loadData();
-    };
-    fetchData();
-  }, [loadData]);
-
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setSuccess("");
-    try {
-      await userService.create(createForm);
-      setSuccess("Utilisateur créé avec succès");
-      setCreateForm({
-        email: "",
-        password_hash: "",
-        first_name: "",
-        last_name: "",
-        role: "user",
-      });
-      loadData();
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Erreur lors de la création");
-      }
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    setError("");
-    setSuccess("");
-    try {
-      await userService.delete(id);
-      setSuccess("Utilisateur supprimé");
-      loadData();
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Erreur lors de la suppresion");
-      }
-    }
-  };
-
-  const handleRoleChange = async (id: string, newRole: string) => {
-    setError("");
-    setSuccess("");
-    try {
-      await userService.update(id, { role: newRole });
-      setSuccess("Rôle mis à jour avec succès");
-      loadData();
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Erreur lors de la modification du rôle");
-      }
-    }
-  };
-
-  const startEdit = (u: User) => {
-    setError("");
-    setSuccess("");
-    setEditingId(u.id);
-    setEditForm(u);
-  };
-
-  const saveEdit = async (id: string) => {
-    setError("");
-    setSuccess("");
-    try {
-      const payload = { ...editForm };
-      delete (payload as Record<string, unknown>).created_at;
-      delete (payload as Record<string, unknown>).id;
-      delete (payload as Record<string, unknown>).password_hash;
-      delete (payload as Record<string, unknown>).role;
-
-      await userService.update(id, payload);
-      setSuccess("Utilisateur mis à jour avec succès");
-      setEditingId(null);
-      loadData();
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Erreur lors de la modification");
-      }
-    }
+  const onSaveEdit = (id: string) => {
+    saveEdit(id, (form) => {
+      const payload = { ...form };
+      delete (payload as any).created_at;
+      delete (payload as any).id;
+      delete (payload as any).password_hash;
+      delete (payload as any).role;
+      return payload;
+    });
   };
 
   return (
@@ -282,7 +199,9 @@ export default function UsersPage() {
                   <select
                     className="bg-transparent border border-transparent hover:border-slate-300 dark:hover:border-slate-600 focus:border-primary rounded px-2 py-1 text-sm font-medium cursor-pointer outline-none transition-colors"
                     value={u.role}
-                    onChange={(e) => handleRoleChange(u.id, e.target.value)}
+                    onChange={(e) =>
+                      handleUpdateField(u.id, "role", e.target.value)
+                    }
                   >
                     <option value="user">Utilisateur</option>
                     <option value="admin">Administrateur</option>
@@ -292,7 +211,7 @@ export default function UsersPage() {
                   {editingId === u.id ? (
                     <div className="flex justify-end gap-2">
                       <button
-                        onClick={() => saveEdit(u.id)}
+                        onClick={() => onSaveEdit(u.id)}
                         className="btn btn-ghost text-green-600 px-2 py-1 text-sm"
                       >
                         Valider

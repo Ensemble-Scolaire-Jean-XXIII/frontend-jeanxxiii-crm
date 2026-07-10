@@ -1,92 +1,38 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
 import { statusService } from "../services/statusService";
 import { Status } from "../types";
 import Toast from "../components/Toast";
+import { useCrud } from "../hooks/useCrud";
 
 export default function StatusesPage() {
-  const [statuses, setStatuses] = useState<Status[]>([]);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [editForm, setEditForm] = useState<Partial<Status>>({});
-  const [createForm, setCreateForm] = useState({ name: "", is_custom: true });
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const {
+    data: statuses,
+    editingId,
+    setEditingId,
+    editForm,
+    setEditForm,
+    createForm,
+    setCreateForm,
+    error,
+    setError,
+    success,
+    setSuccess,
+    handleCreate,
+    handleDelete,
+    startEdit,
+    saveEdit,
+  } = useCrud<Status, { name: string; is_custom: boolean }>(statusService, {
+    name: "",
+    is_custom: true,
+  });
 
-  const loadData = useCallback(async () => {
-    try {
-      const data = await statusService.getAll();
-      setStatuses(data);
-    } catch (err: any) {
-      setError(err.message || "Erreur lors du chargement des statuts");
-    }
-  }, []);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      await loadData();
-    };
-    fetchData();
-  }, [loadData]);
-
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setSuccess("");
-    try {
-      await statusService.create(createForm);
-      setSuccess("Statut créé avec succès");
-      setCreateForm({ name: "", is_custom: true });
-      loadData();
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Erreur lors de la création");
-      }
-    }
-  };
-
-  const handleDelete = async (id: number) => {
-    setError("");
-    setSuccess("");
-    try {
-      await statusService.delete(id);
-      setSuccess("Statut supprimé");
-      loadData();
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Erreur lors de la suppression");
-      }
-    }
-  };
-
-  const startEdit = (s: Status) => {
-    setError("");
-    setSuccess("");
-    setEditingId(s.id);
-    setEditForm(s);
-  };
-
-  const saveEdit = async (id: number) => {
-    setError("");
-    setSuccess("");
-    try {
-      const payload = { ...editForm };
-      delete (payload as Record<string, unknown>).id;
-      await statusService.update(id, payload);
-      setSuccess("Statut mis à jour avec succès");
-      setEditingId(null);
-      loadData();
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Erreur lors de la modification");
-      }
-    }
+  const onSaveEdit = (id: number) => {
+    saveEdit(id, (form) => {
+      const payload = { ...form };
+      delete (payload as any).id;
+      return payload;
+    });
   };
 
   return (
@@ -165,7 +111,7 @@ export default function StatusesPage() {
                   {editingId === s.id ? (
                     <div className="flex justify-end gap-2">
                       <button
-                        onClick={() => saveEdit(s.id)}
+                        onClick={() => onSaveEdit(s.id)}
                         className="btn btn-ghost text-green-600 px-2 py-1 text-sm"
                       >
                         Valider

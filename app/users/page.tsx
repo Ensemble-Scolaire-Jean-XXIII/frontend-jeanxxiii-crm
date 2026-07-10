@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { userService } from "../services/userService";
 import { User } from "../types/index";
+import Toast from "../components/Toast";
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -15,10 +16,20 @@ export default function UsersPage() {
     last_name: "",
     role: "user",
   });
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const loadData = useCallback(async () => {
-    const data = await userService.getAll();
-    setUsers(data);
+    try {
+      const data = await userService.getAll();
+      setUsers(data);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Erreur lors du chargement des utilisateurs");
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -27,33 +38,70 @@ export default function UsersPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    await userService.create(createForm);
-    setCreateForm({
-      email: "",
-      password_hash: "",
-      first_name: "",
-      last_name: "",
-      role: "user",
-    });
-    loadData();
+    setError("");
+    setSuccess("");
+    try {
+      await userService.create(createForm);
+      setSuccess("Utilisateur créé avec succès");
+      setCreateForm({
+        email: "",
+        password_hash: "",
+        first_name: "",
+        last_name: "",
+        role: "user",
+      });
+      loadData();
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Erreur lors de la création");
+      }
+    }
   };
 
   const handleDelete = async (id: string) => {
-    await userService.delete(id);
-    loadData();
+    setError("");
+    setSuccess("");
+    try {
+      await userService.delete(id);
+      setSuccess("Utilisateur supprimé");
+      loadData();
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Erreur lors de la suppresion");
+      }
+    }
   };
 
   const handleRoleChange = async (id: string, newRole: string) => {
-    await userService.update(id, { role: newRole });
-    loadData();
+    setError("");
+    setSuccess("");
+    try {
+      await userService.update(id, { role: newRole });
+      setSuccess("Rôle mis à jour avec succès");
+      loadData();
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Erreur lors de la modification du rôle");
+      }
+    }
   };
 
   const startEdit = (u: User) => {
+    setError("");
+    setSuccess("");
     setEditingId(u.id);
     setEditForm(u);
   };
 
   const saveEdit = async (id: string) => {
+    setError("");
+    setSuccess("");
     try {
       const payload = { ...editForm };
       delete (payload as Record<string, unknown>).created_at;
@@ -62,15 +110,23 @@ export default function UsersPage() {
       delete (payload as Record<string, unknown>).role;
 
       await userService.update(id, payload);
+      setSuccess("Utilisateur mis à jour avec succès");
       setEditingId(null);
       loadData();
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Erreur lors de la modification");
+      }
     }
   };
 
   return (
     <div className="space-y-8">
+      <Toast message={error} type="error" onClose={() => setError("")} />
+      <Toast message={success} type="success" onClose={() => setSuccess("")} />
+
       <h1 className="text-3xl font-bold text-primary dark:text-white">
         Utilisateurs
       </h1>

@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { templateService } from "../services/templateService";
 import { EmailTemplate } from "../types/index";
+import Toast from "../components/Toast";
 
 export default function TemplatesPage() {
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
@@ -13,10 +14,20 @@ export default function TemplatesPage() {
     subject: "",
     body: "",
   });
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const loadData = useCallback(async () => {
-    const data = await templateService.getAll();
-    setTemplates(data);
+    try {
+      const data = await templateService.getAll();
+      setTemplates(data);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Erreur lors du chargement des templates");
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -25,32 +36,70 @@ export default function TemplatesPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    await templateService.create(createForm);
-    setCreateForm({ name: "", subject: "", body: "" });
-    loadData();
+    setError("");
+    setSuccess("");
+    try {
+      await templateService.create(createForm);
+      setSuccess("Template créé avec succès");
+      setCreateForm({ name: "", subject: "", body: "" });
+      loadData();
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Erreur lors de la création");
+      }
+    }
   };
 
   const handleDelete = async (id: string) => {
-    await templateService.delete(id);
-    loadData();
+    setError("");
+    setSuccess("");
+    try {
+      await templateService.delete(id);
+      setSuccess("Template supprimé");
+      loadData();
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Erreur lors de la suppresion");
+      }
+    }
   };
 
   const startEdit = (t: EmailTemplate) => {
+    setError("");
+    setSuccess("");
     setEditingId(t.id);
     setEditForm(t);
   };
 
   const saveEdit = async (id: string) => {
-    const payload = { ...editForm };
-    delete (payload as Record<string, unknown>).created_at;
-    delete (payload as Record<string, unknown>).id;
-    await templateService.update(id, payload);
-    setEditingId(null);
-    loadData();
+    setError("");
+    setSuccess("");
+    try {
+      const payload = { ...editForm };
+      delete (payload as Record<string, unknown>).created_at;
+      delete (payload as Record<string, unknown>).id;
+      await templateService.update(id, payload);
+      setSuccess("Template mis à jour avec succès");
+      setEditingId(null);
+      loadData();
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Erreur lors de la modification");
+      }
+    }
   };
 
   return (
     <div className="space-y-8">
+      <Toast message={error} type="error" onClose={() => setError("")} />
+      <Toast message={success} type="success" onClose={() => setSuccess("")} />
+
       <h1 className="text-3xl font-bold text-primary dark:text-white">
         Templates Email
       </h1>

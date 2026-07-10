@@ -5,6 +5,7 @@ import { prospectService } from "../services/prospectService";
 import { statusService } from "../services/statusService";
 import { countryService } from "../services/countryService";
 import { ProspectExtended, Status, Country } from "../types";
+import Toast from "../components/Toast";
 
 const formInputs = [
   { name: "first_name", type: "text", placeholder: "Prénom", required: true },
@@ -29,16 +30,26 @@ export default function ProspectsPage() {
     country_id: 1,
     status_id: 1,
   });
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const loadData = useCallback(async () => {
-    const [pData, sData, cData] = await Promise.all([
-      prospectService.getAll(),
-      statusService.getAll(),
-      countryService.getAll(),
-    ]);
-    setProspects(pData);
-    setStatuses(sData);
-    setCountries(cData);
+    try {
+      const [pData, sData, cData] = await Promise.all([
+        prospectService.getAll(),
+        statusService.getAll(),
+        countryService.getAll(),
+      ]);
+      setProspects(pData);
+      setStatuses(sData);
+      setCountries(cData);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Erreur lors du chargement des données");
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -57,23 +68,45 @@ export default function ProspectsPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { country_id, ...rest } = createForm;
-    await prospectService.create({ ...rest, country: String(country_id) });
-    setCreateForm({
-      first_name: "",
-      last_name: "",
-      email: "",
-      phone: "",
-      gender: "Masculin",
-      country_id: 1,
-      status_id: 1,
-    });
-    loadData();
+    setError("");
+    setSuccess("");
+    try {
+      const { country_id, ...rest } = createForm;
+      await prospectService.create({ ...rest, country: String(country_id) });
+      setSuccess("Prospect créé avec succès");
+      setCreateForm({
+        first_name: "",
+        last_name: "",
+        email: "",
+        phone: "",
+        gender: "Masculin",
+        country_id: 1,
+        status_id: 1,
+      });
+      loadData();
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Erreur lors de la création");
+      }
+    }
   };
 
   const handleDelete = async (id: string) => {
-    await prospectService.delete(id);
-    loadData();
+    setError("");
+    setSuccess("");
+    try {
+      await prospectService.delete(id);
+      setSuccess("Prospect supprimé");
+      loadData();
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Erreur lors de la suppresion");
+      }
+    }
   };
 
   const handleUpdate = async (
@@ -81,24 +114,48 @@ export default function ProspectsPage() {
     field: string,
     value: string | number,
   ) => {
-    await prospectService.update(id, { [field]: value });
-    loadData();
+    setError("");
+    setSuccess("");
+    try {
+      await prospectService.update(id, { [field]: value });
+      setSuccess("Prospect mis à jour");
+      loadData();
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Erreur lors de la mise à jour");
+      }
+    }
   };
 
   const startEdit = (p: ProspectExtended) => {
+    setError("");
+    setSuccess("");
     setEditingId(p.id);
     setEditForm(p);
   };
 
   const saveEdit = async (id: string) => {
-    await prospectService.update(id, {
-      first_name: editForm.first_name,
-      last_name: editForm.last_name,
-      email: editForm.email,
-      phone: editForm.phone,
-    });
-    setEditingId(null);
-    loadData();
+    setError("");
+    setSuccess("");
+    try {
+      await prospectService.update(id, {
+        first_name: editForm.first_name,
+        last_name: editForm.last_name,
+        email: editForm.email,
+        phone: editForm.phone,
+      });
+      setSuccess("Prospect mis à jour avec succès");
+      setEditingId(null);
+      loadData();
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Erreur lors de la modification");
+      }
+    }
   };
 
   const sortedProspects = [...prospects].sort((a, b) => {
@@ -126,6 +183,9 @@ export default function ProspectsPage() {
 
   return (
     <div className="space-y-8">
+      <Toast message={error} type="error" onClose={() => setError("")} />
+      <Toast message={success} type="success" onClose={() => setSuccess("")} />
+
       <h1 className="text-3xl font-bold text-primary dark:text-white">
         Prospects
       </h1>
@@ -354,6 +414,30 @@ export default function ProspectsPage() {
                     </div>
                   ) : (
                     <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      <button
+                        onClick={async () => {
+                          try {
+                            const status = statuses.find(
+                              (s) => s.id === p.status_id,
+                            );
+                            if (!status?.id) {
+                              throw new Error("Aucun template lié à ce statut");
+                            }
+
+                            await prospectService.sendEmail(p.id, status.id);
+                            setSuccess("Email envoyé");
+                          } catch (err) {
+                            setError(
+                              err instanceof Error
+                                ? err.message
+                                : "Erreur lors de l'envoi",
+                            );
+                          }
+                        }}
+                        className="btn btn-ghost text-blue-600 px-2 py-1 text-sm"
+                      >
+                        Envoyer Mail
+                      </button>
                       <button
                         onClick={() => startEdit(p)}
                         className="btn btn-ghost text-accent px-2 py-1 text-sm"

@@ -53,7 +53,10 @@ export default function ProspectsPage() {
   }, []);
 
   useEffect(() => {
-    loadData();
+    const fetchData = async () => {
+      await loadData();
+    };
+    fetchData();
   }, [loadData]);
 
   const handleCreateChange = (

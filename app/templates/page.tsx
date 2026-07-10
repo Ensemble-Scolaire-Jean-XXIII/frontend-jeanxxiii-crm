@@ -31,7 +31,10 @@ export default function TemplatesPage() {
   }, []);
 
   useEffect(() => {
-    loadData();
+    const fetchData = async () => {
+      await loadData();
+    };
+    fetchData();
   }, [loadData]);
 
   const handleCreate = async (e: React.FormEvent) => {

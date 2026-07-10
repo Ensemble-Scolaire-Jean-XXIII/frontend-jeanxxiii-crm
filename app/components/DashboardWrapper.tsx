@@ -57,20 +57,24 @@ export default function DashboardWrapper({
 
   useEffect(() => {
     if (isLoginPage) {
-      setIsLoading(false);
+      setTimeout(() => setIsLoading(false), 0);
       return;
     }
+
     const token = localStorage.getItem("token");
     if (!token) {
       router.push("/login");
       return;
     }
+
     const decoded = parseJwt(token);
     if (!decoded) {
       handleLogout();
     } else {
-      setIsAdmin(decoded.role === "admin");
-      setIsLoading(false);
+      setTimeout(() => {
+        setIsAdmin(decoded.role === "admin");
+        setIsLoading(false);
+      }, 0);
     }
   }, [isLoginPage, router, handleLogout]);
 

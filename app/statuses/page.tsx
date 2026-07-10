@@ -23,7 +23,10 @@ export default function StatusesPage() {
   }, []);
 
   useEffect(() => {
-    loadData();
+    const fetchData = async () => {
+      await loadData();
+    };
+    fetchData();
   }, [loadData]);
 
   const handleCreate = async (e: React.FormEvent) => {

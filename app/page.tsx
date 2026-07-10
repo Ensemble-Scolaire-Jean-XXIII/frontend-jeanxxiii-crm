@@ -54,7 +54,10 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    loadData();
+    const fetchData = async () => {
+      await loadData();
+    };
+    fetchData();
   }, [loadData]);
 
   return (

@@ -22,10 +22,17 @@ export interface Prospect {
   last_name: string;
   phone: string;
   gender: string;
-  country_id: number;
-  status_id: number;
+  country_id: number | null;
+  status_id: number | null;
   last_action_date: string | null;
   created_at?: string;
+  lexpress_id?: string | null;
+  situation?: string | null;
+  niveau?: string | null;
+  programme?: string | null;
+  campus?: string | null;
+  code_postal?: string | null;
+  commentaire?: string | null;
 }
 
 export interface ProspectExtended extends Prospect {

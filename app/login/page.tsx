@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { userService } from "../services/userService";
+import Toast from "../components/Toast";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -11,19 +13,9 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setError("");
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/users/login`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password_hash: passwordHash }),
-        },
-      );
-
-      if (!res.ok) throw new Error("Identifiants invalides");
-
-      const data = await res.json();
+      const data = await userService.login(email, passwordHash);
       localStorage.setItem("token", data.token);
       router.push("/");
     } catch (err: unknown) {
@@ -35,9 +27,10 @@ export default function LoginPage() {
 
   return (
     <div className="flex h-screen items-center justify-center bg-background">
+      <Toast message={error} type="error" onClose={() => setError("")} />
+
       <div className="w-full max-w-md rounded-xl bg-white dark:bg-secondary p-8 shadow-md border-t-4 border-t-accent">
         <h1 className="mb-6 text-2xl font-bold text-primary">Connexion CRM</h1>
-        {error && <p className="mb-4 text-danger font-bold">{error}</p>}
         <form onSubmit={handleLogin} className="flex flex-col gap-4">
           <input
             type="email"

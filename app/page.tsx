@@ -151,7 +151,9 @@ export default function DashboardPage() {
                       key={t.id}
                       className="border-b border-white/10 hover:bg-white/10 transition-colors"
                     >
-                      <td className="p-4 text-sm font-medium">{t.task_type}</td>
+                      <td className="p-4 text-sm font-medium">
+                        {t.task_type_id}
+                      </td>
                       <td className="p-4 text-sm opacity-80">
                         {new Date(t.due_date).toLocaleDateString()}
                       </td>

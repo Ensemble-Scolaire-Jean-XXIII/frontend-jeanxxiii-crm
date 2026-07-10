@@ -5,4 +5,6 @@ export const prospectService = {
   create: (data: unknown) => api.post("/prospects", data),
   update: (id: string, data: unknown) => api.put(`/prospects/${id}`, data),
   delete: (id: string) => api.delete(`/prospects/${id}`),
+  sendEmail: (id: string, template_id: string) =>
+    api.post(`/prospects/${id}/send-email`, { template_id }),
 };

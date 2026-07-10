@@ -8,11 +8,6 @@ export interface User {
   created_at?: string;
 }
 
-export interface Country {
-  id: string;
-  name: string;
-}
-
 export interface Status {
   id: number;
   name: string;
@@ -46,14 +41,23 @@ export interface EmailTemplate {
   created_at?: string;
 }
 
+export interface Country {
+  id: number;
+  name: string;
+}
+
 export interface Task {
   id: string;
   prospect_id: string;
-  assigned_to: string | null;
   email_template_id: string | null;
-  notification_email: string;
-  task_type: string;
+  task_type_id: number;
   due_date: string;
   is_completed: boolean;
   created_at?: string;
+}
+
+export interface TaskType {
+  id: number;
+  name: string;
+  is_custom: boolean;
 }

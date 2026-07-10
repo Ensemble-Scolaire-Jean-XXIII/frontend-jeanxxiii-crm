@@ -3,16 +3,23 @@
 import { useEffect, useState, useCallback } from "react";
 import { statusService } from "../services/statusService";
 import { Status } from "../types";
+import Toast from "../components/Toast";
 
 export default function StatusesPage() {
   const [statuses, setStatuses] = useState<Status[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<Partial<Status>>({});
   const [createForm, setCreateForm] = useState({ name: "", is_custom: true });
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const loadData = useCallback(async () => {
-    const data = await statusService.getAll();
-    setStatuses(data);
+    try {
+      const data = await statusService.getAll();
+      setStatuses(data);
+    } catch (err: any) {
+      setError(err.message || "Erreur lors du chargement des statuts");
+    }
   }, []);
 
   useEffect(() => {
@@ -21,31 +28,69 @@ export default function StatusesPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    await statusService.create(createForm);
-    setCreateForm({ name: "", is_custom: true });
-    loadData();
+    setError("");
+    setSuccess("");
+    try {
+      await statusService.create(createForm);
+      setSuccess("Statut créé avec succès");
+      setCreateForm({ name: "", is_custom: true });
+      loadData();
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Erreur lors de la création");
+      }
+    }
   };
 
   const handleDelete = async (id: number) => {
-    await statusService.delete(id);
-    loadData();
+    setError("");
+    setSuccess("");
+    try {
+      await statusService.delete(id);
+      setSuccess("Statut supprimé");
+      loadData();
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Erreur lors de la suppression");
+      }
+    }
   };
 
   const startEdit = (s: Status) => {
+    setError("");
+    setSuccess("");
     setEditingId(s.id);
     setEditForm(s);
   };
 
   const saveEdit = async (id: number) => {
-    const payload = { ...editForm };
-    delete (payload as Record<string, unknown>).id;
-    await statusService.update(id, payload);
-    setEditingId(null);
-    loadData();
+    setError("");
+    setSuccess("");
+    try {
+      const payload = { ...editForm };
+      delete (payload as Record<string, unknown>).id;
+      await statusService.update(id, payload);
+      setSuccess("Statut mis à jour avec succès");
+      setEditingId(null);
+      loadData();
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Erreur lors de la modification");
+      }
+    }
   };
 
   return (
     <div className="space-y-8">
+      <Toast message={error} type="error" onClose={() => setError("")} />
+      <Toast message={success} type="success" onClose={() => setSuccess("")} />
+
       <h1 className="text-3xl font-bold text-primary dark:text-white">
         Statuts
       </h1>

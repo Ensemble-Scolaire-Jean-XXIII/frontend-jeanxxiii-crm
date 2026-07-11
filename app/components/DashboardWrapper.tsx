@@ -123,7 +123,7 @@ export default function DashboardWrapper({
             <NavLink href="/">Tableau de bord</NavLink>
             {isAdmin && <NavLink href="/users">Utilisateurs</NavLink>}
             <NavLink href="/prospects">Prospects</NavLink>
-            <NavLink href="/tasks">Tâches</NavLink>
+            <NavLink href="/automations">Automatisations</NavLink>
             <NavLink href="/statuses">Statuts</NavLink>
             <NavLink href="/templates">Templates</NavLink>
             <NavLink href="/profile">Mon Profile</NavLink>

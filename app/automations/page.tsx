@@ -16,6 +16,13 @@ interface AutomationRule {
   delay_days: number;
 }
 
+interface CreateAutomationDTO {
+  status_id: number | "";
+  programme: string | null;
+  email_template_id: string;
+  delay_days: number;
+}
+
 export default function AutomationsPage() {
   const {
     data: automations,
@@ -27,7 +34,7 @@ export default function AutomationsPage() {
     setCreateForm,
     handleCreate,
     handleDelete,
-  } = useCrud<AutomationRule, any>(automationService, {
+  } = useCrud<AutomationRule, CreateAutomationDTO>(automationService, {
     status_id: "",
     programme: "",
     email_template_id: "",
@@ -48,15 +55,18 @@ export default function AutomationsPage() {
         setTemplates(tData);
 
         if (!createForm.status_id && sData.length > 0) {
-          setCreateForm((prev: any) => ({ ...prev, status_id: sData[0].id }));
+          setCreateForm((prev: CreateAutomationDTO) => ({
+            ...prev,
+            status_id: sData[0].id,
+          }));
         }
         if (!createForm.email_template_id && tData.length > 0) {
-          setCreateForm((prev: any) => ({
+          setCreateForm((prev: CreateAutomationDTO) => ({
             ...prev,
             email_template_id: tData[0].id,
           }));
         }
-      } catch (err) {
+      } catch {
         setError("Erreur lors du chargement des statuts ou des templates");
       }
     };

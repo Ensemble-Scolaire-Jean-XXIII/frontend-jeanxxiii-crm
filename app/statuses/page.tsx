@@ -5,6 +5,11 @@ import { Status } from "../types";
 import Toast from "../components/Toast";
 import { useCrud } from "../hooks/useCrud";
 
+interface CreateStatusDTO {
+  name: string;
+  is_custom: boolean;
+}
+
 export default function StatusesPage() {
   const {
     data: statuses,
@@ -22,7 +27,7 @@ export default function StatusesPage() {
     handleDelete,
     startEdit,
     saveEdit,
-  } = useCrud<Status, { name: string; is_custom: boolean }>(statusService, {
+  } = useCrud<Status, CreateStatusDTO>(statusService, {
     name: "",
     is_custom: true,
   });
@@ -30,7 +35,7 @@ export default function StatusesPage() {
   const onSaveEdit = (id: number) => {
     saveEdit(id, (form) => {
       const payload = { ...form };
-      delete (payload as any).id;
+      delete (payload as { id?: string | number }).id;
       return payload;
     });
   };

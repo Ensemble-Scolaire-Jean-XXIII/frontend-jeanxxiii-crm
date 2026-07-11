@@ -18,7 +18,7 @@ export const userService = {
   getAll: () => api.get("/users"),
   getMe: () => api.get("/users/me"),
   create: (data: unknown) => api.post("/users", data),
-  update: (id: string, data: unknown) => api.put(`/users/${id}`, data),
+  update: (id: string | number, data: unknown) => api.put(`/users/${id}`, data),
   updateMe: (data: unknown) => api.put("/users/me", data),
-  delete: (id: string) => api.delete(`/users/${id}`),
+  delete: (id: string | number) => api.delete(`/users/${id}`),
 };

@@ -1,7 +1,17 @@
 import { useState, useEffect, useCallback } from "react";
 
+export interface CrudService<T, CreateDTO, UpdateDTO = Partial<T>> {
+  getAll: () => Promise<T[]>;
+  create: (data: CreateDTO) => Promise<unknown>;
+  update: (
+    id: string | number,
+    data: UpdateDTO | Record<string, unknown>,
+  ) => Promise<unknown>;
+  delete: (id: string | number) => Promise<unknown>;
+}
+
 export function useCrud<T extends { id: string | number }, CreateDTO>(
-  service: any,
+  service: CrudService<T, CreateDTO>,
   initialCreateState: CreateDTO,
 ) {
   const [data, setData] = useState<T[]>([]);
@@ -27,7 +37,10 @@ export function useCrud<T extends { id: string | number }, CreateDTO>(
     fetchData();
   }, [loadData]);
 
-  const handleCreate = async (e: React.FormEvent, customPayload?: any) => {
+  const handleCreate = async (
+    e: React.FormEvent,
+    customPayload?: CreateDTO,
+  ) => {
     e.preventDefault();
     setError("");
     setSuccess("");
@@ -62,7 +75,9 @@ export function useCrud<T extends { id: string | number }, CreateDTO>(
 
   const saveEdit = async (
     id: string | number,
-    payloadModifier?: (form: Partial<T>) => any,
+    payloadModifier?: (
+      form: Partial<T>,
+    ) => Partial<T> | Record<string, unknown>,
   ) => {
     setError("");
     setSuccess("");
@@ -82,7 +97,7 @@ export function useCrud<T extends { id: string | number }, CreateDTO>(
   const handleUpdateField = async (
     id: string | number,
     field: string,
-    value: any,
+    value: unknown,
   ) => {
     setError("");
     setSuccess("");

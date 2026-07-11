@@ -2,6 +2,13 @@ import { useEffect, useState } from "react";
 import { userService } from "../services/userService";
 import { User } from "../types/index";
 
+interface UpdateProfileDTO {
+  first_name: string;
+  last_name: string;
+  email: string;
+  password_hash?: string;
+}
+
 export function useProfile() {
   const [user, setUser] = useState<User | null>(null);
   const [formData, setFormData] = useState({
@@ -67,7 +74,7 @@ export function useProfile() {
     }
 
     try {
-      const updateData: any = {
+      const updateData: UpdateProfileDTO = {
         first_name: formData.first_name,
         last_name: formData.last_name,
         email: formData.email,

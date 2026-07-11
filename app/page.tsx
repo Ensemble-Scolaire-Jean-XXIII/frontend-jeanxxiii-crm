@@ -27,7 +27,7 @@ export default function DashboardPage() {
 
       setStats({
         prospects: Array.isArray(pData) ? pData.length : 0,
-        users: isUserAdmin ? (uData as any[]).length : 0,
+        users: isUserAdmin ? (uData as unknown[]).length : 0,
         automations: Array.isArray(aData) ? aData.length : 0,
       });
       setIsAdmin(isUserAdmin);

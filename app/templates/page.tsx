@@ -5,6 +5,12 @@ import { EmailTemplate } from "../types/index";
 import Toast from "../components/Toast";
 import { useCrud } from "../hooks/useCrud";
 
+interface CreateTemplateDTO {
+  name: string;
+  subject: string;
+  body: string;
+}
+
 export default function TemplatesPage() {
   const {
     data: templates,
@@ -22,7 +28,7 @@ export default function TemplatesPage() {
     handleDelete,
     startEdit,
     saveEdit,
-  } = useCrud<EmailTemplate, any>(templateService, {
+  } = useCrud<EmailTemplate, CreateTemplateDTO>(templateService, {
     name: "",
     subject: "",
     body: "",
@@ -31,8 +37,7 @@ export default function TemplatesPage() {
   const onSaveEdit = (id: string) => {
     saveEdit(id, (form) => {
       const payload = { ...form };
-      delete (payload as any).created_at;
-      delete (payload as any).id;
+      delete (payload as { id?: string | number }).id;
       return payload;
     });
   };

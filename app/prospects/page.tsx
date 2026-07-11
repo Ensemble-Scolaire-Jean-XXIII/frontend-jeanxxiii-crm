@@ -8,7 +8,21 @@ import { ProspectExtended, Status, Country } from "../types";
 import Toast from "../components/Toast";
 import { useCrud } from "../hooks/useCrud";
 
-const formInputs = [
+interface CreateProspectsDTO {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  gender: string;
+  country_id: number;
+  status_id: number;
+}
+const formInputs: {
+  name: keyof CreateProspectsDTO;
+  type: string;
+  placeholder: string;
+  required: boolean;
+}[] = [
   { name: "first_name", type: "text", placeholder: "Prénom", required: true },
   { name: "last_name", type: "text", placeholder: "Nom", required: true },
   { name: "email", type: "email", placeholder: "Email", required: true },
@@ -33,7 +47,7 @@ export default function ProspectsPage() {
     handleUpdateField,
     startEdit,
     saveEdit,
-  } = useCrud<ProspectExtended, any>(prospectService, {
+  } = useCrud<ProspectExtended, CreateProspectsDTO>(prospectService, {
     first_name: "",
     last_name: "",
     email: "",
@@ -56,7 +70,7 @@ export default function ProspectsPage() {
         ]);
         setStatuses(sData);
         setCountries(cData);
-      } catch (err) {
+      } catch {
         setError("Erreur lors du chargement des données secondaires");
       }
     };
@@ -67,15 +81,14 @@ export default function ProspectsPage() {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
-    setCreateForm((prev: any) => ({
+    setCreateForm((prev: CreateProspectsDTO) => ({
       ...prev,
       [name]: name.endsWith("_id") ? Number(value) : value,
     }));
   };
 
   const onHandleCreate = (e: React.FormEvent) => {
-    const { country_id, ...rest } = createForm;
-    handleCreate(e, { ...rest, country: String(country_id) });
+    handleCreate(e, createForm);
   };
 
   const onSaveEdit = (id: string) => {
@@ -85,19 +98,6 @@ export default function ProspectsPage() {
       email: form.email,
       phone: form.phone,
     }));
-  };
-
-  const handleSendEmail = async (p: ProspectExtended) => {
-    setError("");
-    setSuccess("");
-    try {
-      const status = statuses.find((s) => s.id === p.status_id);
-      if (!status?.id) throw new Error("Aucun template lié à ce statut");
-      await prospectService.sendEmail(p.id, status.id.toString());
-      setSuccess("Email envoyé");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur d'envoi");
-    }
   };
 
   const sortedProspects = [...prospects].sort((a, b) => {
@@ -153,7 +153,7 @@ export default function ProspectsPage() {
                 name={input.name}
                 type={input.type}
                 className="input-field"
-                value={createForm[input.name]}
+                value={createForm[input.name] as string}
                 onChange={handleCreateChange}
                 required={input.required}
               />
@@ -228,14 +228,14 @@ export default function ProspectsPage() {
                   value={sortOption}
                   onChange={(e) => setSortOption(e.target.value)}
                 >
+                  <option value="date_asc">Trier par: Action ancienne</option>
+                  <option value="date_desc">Trier par: Action récente</option>
                   <option value="alpha_asc">
                     Trier par: Alphabétique (A-Z)
                   </option>
                   <option value="alpha_desc">
                     Trier par: Alphabétique (Z-A)
                   </option>
-                  <option value="date_desc">Trier par: Action récente</option>
-                  <option value="date_asc">Trier par: Action ancienne</option>
                   <option value="status">Trier par: Statut</option>
                 </select>
               </th>
@@ -364,12 +364,6 @@ export default function ProspectsPage() {
                     </div>
                   ) : (
                     <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                      <button
-                        onClick={() => handleSendEmail(p)}
-                        className="btn btn-ghost text-blue-600 px-2 py-1 text-sm"
-                      >
-                        Envoyer Mail
-                      </button>
                       <button
                         onClick={() => startEdit(p)}
                         className="btn btn-ghost text-accent px-2 py-1 text-sm"

@@ -5,6 +5,14 @@ import { User } from "../types/index";
 import Toast from "../components/Toast";
 import { useCrud } from "../hooks/useCrud";
 
+interface CreateUsersDTO {
+  email: string;
+  password_hash: string;
+  first_name: string;
+  last_name: string;
+  role: string;
+}
+
 export default function UsersPage() {
   const {
     data: users,
@@ -23,7 +31,7 @@ export default function UsersPage() {
     handleUpdateField,
     startEdit,
     saveEdit,
-  } = useCrud<User, any>(userService, {
+  } = useCrud<User, CreateUsersDTO>(userService, {
     email: "",
     password_hash: "",
     first_name: "",
@@ -34,10 +42,7 @@ export default function UsersPage() {
   const onSaveEdit = (id: string) => {
     saveEdit(id, (form) => {
       const payload = { ...form };
-      delete (payload as any).created_at;
-      delete (payload as any).id;
-      delete (payload as any).password_hash;
-      delete (payload as any).role;
+      delete (payload as { id?: string | number }).id;
       return payload;
     });
   };

@@ -1,13 +1,28 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { prospectService } from "../services/prospectService";
 import { statusService } from "../services/statusService";
 import { countryService } from "../services/countryService";
 import { ProspectExtended, Status, Country } from "../types";
 import Toast from "../components/Toast";
+import { useCrud } from "../hooks/useCrud";
 
-const formInputs = [
+interface CreateProspectsDTO {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  gender: string;
+  country_id: number;
+  status_id: number;
+}
+const formInputs: {
+  name: keyof CreateProspectsDTO;
+  type: string;
+  placeholder: string;
+  required: boolean;
+}[] = [
   { name: "first_name", type: "text", placeholder: "Prénom", required: true },
   { name: "last_name", type: "text", placeholder: "Nom", required: true },
   { name: "email", type: "email", placeholder: "Email", required: true },
@@ -15,13 +30,24 @@ const formInputs = [
 ];
 
 export default function ProspectsPage() {
-  const [prospects, setProspects] = useState<ProspectExtended[]>([]);
-  const [statuses, setStatuses] = useState<Status[]>([]);
-  const [countries, setCountries] = useState<Country[]>([]);
-  const [sortOption, setSortOption] = useState("alpha_asc");
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<Partial<ProspectExtended>>({});
-  const [createForm, setCreateForm] = useState({
+  const {
+    data: prospects,
+    error,
+    success,
+    editingId,
+    editForm,
+    createForm,
+    setError,
+    setSuccess,
+    setEditingId,
+    setEditForm,
+    setCreateForm,
+    handleCreate,
+    handleDelete,
+    handleUpdateField,
+    startEdit,
+    saveEdit,
+  } = useCrud<ProspectExtended, CreateProspectsDTO>(prospectService, {
     first_name: "",
     last_name: "",
     email: "",
@@ -30,132 +56,48 @@ export default function ProspectsPage() {
     country_id: 1,
     status_id: 1,
   });
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
-  const loadData = useCallback(async () => {
-    try {
-      const [pData, sData, cData] = await Promise.all([
-        prospectService.getAll(),
-        statusService.getAll(),
-        countryService.getAll(),
-      ]);
-      setProspects(pData);
-      setStatuses(sData);
-      setCountries(cData);
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Erreur lors du chargement des données");
-      }
-    }
-  }, []);
+  const [statuses, setStatuses] = useState<Status[]>([]);
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [sortOption, setSortOption] = useState("alpha_asc");
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    const fetchSecondaryData = async () => {
+      try {
+        const [sData, cData] = await Promise.all([
+          statusService.getAll(),
+          countryService.getAll(),
+        ]);
+        setStatuses(sData);
+        setCountries(cData);
+      } catch {
+        setError("Erreur lors du chargement des données secondaires");
+      }
+    };
+    fetchSecondaryData();
+  }, [setError]);
 
   const handleCreateChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
-    setCreateForm((prev) => ({
+    setCreateForm((prev: CreateProspectsDTO) => ({
       ...prev,
       [name]: name.endsWith("_id") ? Number(value) : value,
     }));
   };
 
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setSuccess("");
-    try {
-      const { country_id, ...rest } = createForm;
-      await prospectService.create({ ...rest, country: String(country_id) });
-      setSuccess("Prospect créé avec succès");
-      setCreateForm({
-        first_name: "",
-        last_name: "",
-        email: "",
-        phone: "",
-        gender: "Masculin",
-        country_id: 1,
-        status_id: 1,
-      });
-      loadData();
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Erreur lors de la création");
-      }
-    }
+  const onHandleCreate = (e: React.FormEvent) => {
+    handleCreate(e, createForm);
   };
 
-  const handleDelete = async (id: string) => {
-    setError("");
-    setSuccess("");
-    try {
-      await prospectService.delete(id);
-      setSuccess("Prospect supprimé");
-      loadData();
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Erreur lors de la suppresion");
-      }
-    }
-  };
-
-  const handleUpdate = async (
-    id: string,
-    field: string,
-    value: string | number,
-  ) => {
-    setError("");
-    setSuccess("");
-    try {
-      await prospectService.update(id, { [field]: value });
-      setSuccess("Prospect mis à jour");
-      loadData();
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Erreur lors de la mise à jour");
-      }
-    }
-  };
-
-  const startEdit = (p: ProspectExtended) => {
-    setError("");
-    setSuccess("");
-    setEditingId(p.id);
-    setEditForm(p);
-  };
-
-  const saveEdit = async (id: string) => {
-    setError("");
-    setSuccess("");
-    try {
-      await prospectService.update(id, {
-        first_name: editForm.first_name,
-        last_name: editForm.last_name,
-        email: editForm.email,
-        phone: editForm.phone,
-      });
-      setSuccess("Prospect mis à jour avec succès");
-      setEditingId(null);
-      loadData();
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Erreur lors de la modification");
-      }
-    }
+  const onSaveEdit = (id: string) => {
+    saveEdit(id, (form) => ({
+      first_name: form.first_name,
+      last_name: form.last_name,
+      email: form.email,
+      phone: form.phone,
+    }));
   };
 
   const sortedProspects = [...prospects].sort((a, b) => {
@@ -201,7 +143,7 @@ export default function ProspectsPage() {
         </div>
 
         <form
-          onSubmit={handleCreate}
+          onSubmit={onHandleCreate}
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
         >
           {formInputs.map((input) => (
@@ -211,7 +153,7 @@ export default function ProspectsPage() {
                 name={input.name}
                 type={input.type}
                 className="input-field"
-                value={createForm[input.name as keyof typeof createForm]}
+                value={createForm[input.name] as string}
                 onChange={handleCreateChange}
                 required={input.required}
               />
@@ -286,14 +228,14 @@ export default function ProspectsPage() {
                   value={sortOption}
                   onChange={(e) => setSortOption(e.target.value)}
                 >
+                  <option value="date_asc">Trier par: Action ancienne</option>
+                  <option value="date_desc">Trier par: Action récente</option>
                   <option value="alpha_asc">
                     Trier par: Alphabétique (A-Z)
                   </option>
                   <option value="alpha_desc">
                     Trier par: Alphabétique (Z-A)
                   </option>
-                  <option value="date_desc">Trier par: Action récente</option>
-                  <option value="date_asc">Trier par: Action ancienne</option>
                   <option value="status">Trier par: Statut</option>
                 </select>
               </th>
@@ -366,7 +308,11 @@ export default function ProspectsPage() {
                     className="bg-transparent border border-transparent hover:border-slate-300 dark:hover:border-slate-600 focus:border-primary rounded px-2 py-1 text-sm cursor-pointer outline-none transition-colors"
                     value={p.country_id ?? ""}
                     onChange={(e) =>
-                      handleUpdate(p.id, "country_id", Number(e.target.value))
+                      handleUpdateField(
+                        p.id,
+                        "country_id",
+                        Number(e.target.value),
+                      )
                     }
                   >
                     {countries.map((c) => (
@@ -381,7 +327,11 @@ export default function ProspectsPage() {
                     className="bg-transparent border border-transparent hover:border-slate-300 dark:hover:border-slate-600 focus:border-primary rounded px-2 py-1 text-sm cursor-pointer outline-none transition-colors"
                     value={p.status_id ?? ""}
                     onChange={(e) =>
-                      handleUpdate(p.id, "status_id", Number(e.target.value))
+                      handleUpdateField(
+                        p.id,
+                        "status_id",
+                        Number(e.target.value),
+                      )
                     }
                   >
                     {statuses.map((s) => (
@@ -400,7 +350,7 @@ export default function ProspectsPage() {
                   {editingId === p.id ? (
                     <div className="flex justify-end gap-2">
                       <button
-                        onClick={() => saveEdit(p.id)}
+                        onClick={() => onSaveEdit(p.id)}
                         className="btn btn-ghost text-green-600 px-2 py-1 text-sm"
                       >
                         Valider
@@ -414,30 +364,6 @@ export default function ProspectsPage() {
                     </div>
                   ) : (
                     <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                      <button
-                        onClick={async () => {
-                          try {
-                            const status = statuses.find(
-                              (s) => s.id === p.status_id,
-                            );
-                            if (!status?.id) {
-                              throw new Error("Aucun template lié à ce statut");
-                            }
-
-                            await prospectService.sendEmail(p.id, status.id);
-                            setSuccess("Email envoyé");
-                          } catch (err) {
-                            setError(
-                              err instanceof Error
-                                ? err.message
-                                : "Erreur lors de l'envoi",
-                            );
-                          }
-                        }}
-                        className="btn btn-ghost text-blue-600 px-2 py-1 text-sm"
-                      >
-                        Envoyer Mail
-                      </button>
                       <button
                         onClick={() => startEdit(p)}
                         className="btn btn-ghost text-accent px-2 py-1 text-sm"

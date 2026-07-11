@@ -22,10 +22,17 @@ export interface Prospect {
   last_name: string;
   phone: string;
   gender: string;
-  country_id: number;
-  status_id: number;
+  country_id: number | null;
+  status_id: number | null;
   last_action_date: string | null;
   created_at?: string;
+  lexpress_id?: string | null;
+  situation?: string | null;
+  niveau?: string | null;
+  programme?: string | null;
+  campus?: string | null;
+  code_postal?: string | null;
+  commentaire?: string | null;
 }
 
 export interface ProspectExtended extends Prospect {
@@ -46,18 +53,18 @@ export interface Country {
   name: string;
 }
 
-export interface Task {
-  id: string;
-  prospect_id: string;
-  email_template_id: string | null;
-  task_type_id: number;
-  due_date: string;
-  is_completed: boolean;
-  created_at?: string;
+export interface EmailAutomationRule {
+  id: number;
+  status_id: number;
+  programme: string | null;
+  email_template_id: string;
+  delay_days: number;
 }
 
-export interface TaskType {
-  id: number;
-  name: string;
-  is_custom: boolean;
+export interface EmailLog {
+  id: string;
+  prospect_id: string;
+  email_template_id: string;
+  sent_at: Date;
+  status: string;
 }

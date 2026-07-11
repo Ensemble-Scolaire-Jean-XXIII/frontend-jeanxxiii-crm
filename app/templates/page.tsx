@@ -1,98 +1,45 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
 import { templateService } from "../services/templateService";
 import { EmailTemplate } from "../types/index";
 import Toast from "../components/Toast";
+import { useCrud } from "../hooks/useCrud";
+
+interface CreateTemplateDTO {
+  name: string;
+  subject: string;
+  body: string;
+}
 
 export default function TemplatesPage() {
-  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<Partial<EmailTemplate>>({});
-  const [createForm, setCreateForm] = useState({
+  const {
+    data: templates,
+    editingId,
+    setEditingId,
+    editForm,
+    setEditForm,
+    createForm,
+    setCreateForm,
+    error,
+    setError,
+    success,
+    setSuccess,
+    handleCreate,
+    handleDelete,
+    startEdit,
+    saveEdit,
+  } = useCrud<EmailTemplate, CreateTemplateDTO>(templateService, {
     name: "",
     subject: "",
     body: "",
   });
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
-  const loadData = useCallback(async () => {
-    try {
-      const data = await templateService.getAll();
-      setTemplates(data);
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Erreur lors du chargement des templates");
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setSuccess("");
-    try {
-      await templateService.create(createForm);
-      setSuccess("Template créé avec succès");
-      setCreateForm({ name: "", subject: "", body: "" });
-      loadData();
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Erreur lors de la création");
-      }
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    setError("");
-    setSuccess("");
-    try {
-      await templateService.delete(id);
-      setSuccess("Template supprimé");
-      loadData();
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Erreur lors de la suppresion");
-      }
-    }
-  };
-
-  const startEdit = (t: EmailTemplate) => {
-    setError("");
-    setSuccess("");
-    setEditingId(t.id);
-    setEditForm(t);
-  };
-
-  const saveEdit = async (id: string) => {
-    setError("");
-    setSuccess("");
-    try {
-      const payload = { ...editForm };
-      delete (payload as Record<string, unknown>).created_at;
-      delete (payload as Record<string, unknown>).id;
-      await templateService.update(id, payload);
-      setSuccess("Template mis à jour avec succès");
-      setEditingId(null);
-      loadData();
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Erreur lors de la modification");
-      }
-    }
+  const onSaveEdit = (id: string) => {
+    saveEdit(id, (form) => {
+      const payload = { ...form };
+      delete (payload as { id?: string | number }).id;
+      return payload;
+    });
   };
 
   return (
@@ -222,7 +169,7 @@ export default function TemplatesPage() {
                   {editingId === t.id ? (
                     <div className="flex justify-end gap-2">
                       <button
-                        onClick={() => saveEdit(t.id)}
+                        onClick={() => onSaveEdit(t.id)}
                         className="btn btn-ghost text-green-600 px-2 py-1 text-sm"
                       >
                         Valider

@@ -57,20 +57,24 @@ export default function DashboardWrapper({
 
   useEffect(() => {
     if (isLoginPage) {
-      setIsLoading(false);
+      setTimeout(() => setIsLoading(false), 0);
       return;
     }
+
     const token = localStorage.getItem("token");
     if (!token) {
       router.push("/login");
       return;
     }
+
     const decoded = parseJwt(token);
     if (!decoded) {
       handleLogout();
     } else {
-      setIsAdmin(decoded.role === "admin");
-      setIsLoading(false);
+      setTimeout(() => {
+        setIsAdmin(decoded.role === "admin");
+        setIsLoading(false);
+      }, 0);
     }
   }, [isLoginPage, router, handleLogout]);
 
@@ -119,7 +123,7 @@ export default function DashboardWrapper({
             <NavLink href="/">Tableau de bord</NavLink>
             {isAdmin && <NavLink href="/users">Utilisateurs</NavLink>}
             <NavLink href="/prospects">Prospects</NavLink>
-            <NavLink href="/tasks">Tâches</NavLink>
+            <NavLink href="/automations">Automatisations</NavLink>
             <NavLink href="/statuses">Statuts</NavLink>
             <NavLink href="/templates">Templates</NavLink>
             <NavLink href="/profile">Mon Profile</NavLink>

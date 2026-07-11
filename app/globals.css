@@ -88,6 +88,9 @@ body {
   .slideshow-container {
     background-color: var(--background);
   }
+  .content-overlay {
+    background-color: rgba(15, 23, 42, 0.85);
+  }
 }
 
 .slide {
